@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.venv/
+venv/
+.env
+
+# Logs
+*.log
+server_error.log
+server.log
+
+# Binaries
+cloudflared
+
+# Local stores
+chroma_store/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Excel temp files
+~$*.xlsx
+
+# Data artifacts (keep if you want versioned data)
+# *.xlsx

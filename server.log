@@ -1,0 +1,12 @@
+Starting server on port 8026...
+127.0.0.1 - - [29/Dec/2025 12:42:05] "POST /api/chat HTTP/1.1" 200 -
+127.0.0.1 - - [29/Dec/2025 12:46:47] "POST /api/chat HTTP/1.1" 200 -
+127.0.0.1 - - [29/Dec/2025 13:10:25] "POST /api/chat HTTP/1.1" 200 -
+127.0.0.1 - - [29/Dec/2025 13:26:22] "POST /api/chat HTTP/1.1" 500 -
+127.0.0.1 - - [29/Dec/2025 18:40:57] "POST /api/chat HTTP/1.1" 200 -
+127.0.0.1 - - [29/Dec/2025 18:41:50] "POST /api/chat HTTP/1.1" 200 -
+127.0.0.1 - - [29/Dec/2025 18:54:03] "POST /api/chat HTTP/1.1" 200 -
+127.0.0.1 - - [29/Dec/2025 18:55:17] "POST /api/chat HTTP/1.1" 200 -
+127.0.0.1 - - [29/Dec/2025 18:55:36] "POST /api/chat HTTP/1.1" 200 -
+127.0.0.1 - - [29/Dec/2025 18:56:07] "POST /api/chat HTTP/1.1" 200 -
+127.0.0.1 - - [29/Dec/2025 18:56:40] "POST /api/chat HTTP/1.1" 200 -

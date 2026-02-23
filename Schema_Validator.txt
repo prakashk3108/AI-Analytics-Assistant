@@ -1,0 +1,213 @@
+
+
+1. ENTITY RULES
+
+If intent.entity = "customer":
+
+MUST join grp.DimCustomer AS dc
+ON fs.customer_key = dc.customer_key
+
+MUST include dc.customer_name in SELECT
+
+MUST GROUP BY dc.customer_name if aggregation exists
+
+If intent.entity = "sales_person":
+
+MUST join grp.DimSalesPerson AS sp
+ON fs.sales_person_key = sp.sales_person_key
+
+2. AGGREGATION RULES
+
+If intent.aggregation = "sum":
+
+MUST use SUM()
+
+If aggregation exists AND group_by exists:
+
+MUST include GROUP BY for those fields
+
+If aggregation exists but GROUP BY missing:
+
+-- CANNOT_ANSWER
+
+3. GROUP BY RULES
+
+If intent.group_by exists:
+
+All group_by fields MUST appear in SELECT
+
+GROUP BY must be present
+
+If group_by exists but GROUP BY missing:
+
+-- CANNOT_ANSWER
+
+4. ORDER BY RULES
+
+If intent.order_by exists:
+
+MUST include ORDER BY
+
+Direction must match intent.order_by.direction
+
+5. LIMIT RULES
+
+If intent.limit exists:
+
+MUST use TOP (intent.limit)
+
+If limit exists but TOP missing:
+
+-- CANNOT_ANSWER
+
+6. TIME PERIOD RULES (MANDATORY)
+
+If intent.time_period exists:
+
+MUST join dw.DimDate AS dd
+ON fs.close_date_key = dd.date_key
+
+Apply filter:
+
+"last year" → dd.calendar_year = YEAR(GETDATE()) - 1
+
+"this year" → dd.calendar_year = YEAR(GETDATE())
+
+"last month" →
+dd.calendar_month = MONTH(DATEADD(MONTH,-1,GETDATE()))
+AND dd.calendar_year = YEAR(DATEADD(MONTH,-1,GETDATE()))
+
+If time_period exists but DimDate not joined:
+
+-- CANNOT_ANSWER
+
+If these are missing:
+
+-- CANNOT_ANSWER
+
+
+
+SCHEMA (ALLOWED TABLES ONLY)
+
+You may query ONLY the following tables:
+
+grp.FactSale
+dw.FactBudget
+grp.DimCustomer
+grp.DimDealStage
+grp.DimLegalEntity
+grp.DimRevenueType
+grp.DimSalesPerson
+grp.BridgeBudgetExchangeRate
+grp.BridgeExchangeRate
+dw.DimExchangeRate
+dw.DimDate
+
+TABLE DEFINITIONS
+dw.DimDate
+
+date_key (int)
+calendar_date (date)
+calendar_year (smallint)
+calendar_month (smallint)
+calendar_quarter (smallint)
+start_of_month_date (date)
+end_of_month_date (date)
+
+dw.DimExchangeRate
+
+exchange_rate_key (int)
+fx_date_key (int)
+transaction_currency_code (varchar)
+reporting_currency_code (varchar)
+exchange_rate (decimal)
+
+grp.DimCustomer
+
+customer_key (int)
+customer_id (bigint)
+customer_name (varchar)
+domain (varchar)
+
+grp.DimDealStage
+
+deal_stage_key (int)
+deal_stage_name (varchar)
+
+grp.DimLegalEntity
+
+legal_entity_id (int)
+legal_entity_name (varchar)
+country_code (char)
+
+grp.DimRevenueType
+
+revenue_type_key (int)
+revenue_type_name (varchar)
+
+grp.DimSalesPerson
+
+sales_person_key (int)
+first_name (varchar)
+last_name (varchar)
+
+grp.BridgeExchangeRate
+
+sale_key (bigint)
+exchange_rate_key (varchar)
+revenue_fx (decimal)
+margin_fx (decimal)
+tcv_fx (decimal)
+
+grp.FactSale
+
+sale_key (int)
+legal_entity_id (int)
+customer_key (bigint)
+deal_stage_key (bigint)
+revenue_type_key (bigint)
+sales_person_key (bigint)
+close_date_key (int)
+deal_id (varchar)
+deal_name (varchar)
+tcv (decimal)
+
+RELATIONSHIPS
+
+FactSale.close_date_key → DimDate.date_key
+FactBudget.month_end_date_key → DimDate.date_key
+FactSale.customer_key → DimCustomer.customer_key
+FactSale.deal_stage_key → DimDealStage.deal_stage_key
+FactSale.legal_entity_id → DimLegalEntity.legal_entity_id
+FactSale.revenue_type_key → DimRevenueType.revenue_type_key
+FactSale.sales_person_key → DimSalesPerson.sales_person_key
+FactSale.sale_key → BridgeExchangeRate.sale_key
+BridgeExchangeRate.exchange_rate_key → DimExchangeRate.exchange_rate_key
+FactBudget.budget_key → BridgeBudgetExchangeRate.budget_key
+BridgeBudgetExchangeRate.exchange_rate_key → DimExchangeRate.exchange_rate_key
+
+FINAL SELF CHECK (MANDATORY)
+
+Before returning SQL verify:
+
+Starts with SELECT or WITH
+
+No forbidden keywords
+
+No LIMIT
+
+Entity reflected
+
+GROUP BY correct
+
+TOP present if limit exists
+
+DimDate joined if time_period exists
+
+ExchangeRate joined if revenue used
+
+LegalEntity joined if FactSale used
+
+If any fail:
+
+-- CANNOT_ANSWER

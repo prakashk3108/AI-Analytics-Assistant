@@ -1,0 +1,11 @@
+# Copy these into Azure App Service -> Configuration -> Application settings
+
+FABRIC_TENANT_ID=
+FABRIC_CLIENT_ID=
+FABRIC_CLIENT_SECRET=
+FABRIC_SQL_ENDPOINT=
+FABRIC_DATABASE=
+GEMINI_API_KEY=
+
+# Optional
+PORT=8000

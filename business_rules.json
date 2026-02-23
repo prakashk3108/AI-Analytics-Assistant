@@ -1,0 +1,55 @@
+{
+  "defaults": {
+    "region": "GBR",
+    "reporting_currency": "GBP",
+    "stage_bucket": "not_applied"
+  },
+  "allowed": {
+    "regions": ["GBR", "CAN"],
+    "reporting_currencies": ["GBP", "CAD"],
+    "stage_buckets": ["not_applied", "closed_won_forecast", "forecast", "bridge", "upside", "closed_won", "pipeline"]
+  },
+  "mappings": {
+    "region_to_country_code": {
+      "GBR": "GBR",
+      "CAN": "CAN"
+    },
+    "region_to_currency_symbol": {
+      "GBP": "£",
+      "CAD": "C$"
+    }
+  },
+  "constraints": {
+    "legal_entity_name": "HubSpot"
+  },
+  "stage_buckets": {
+    "not_applied": {
+      "mode": "none",
+      "values": []
+    },
+    "closed_won": {
+      "mode": "in",
+      "values": ["Closed Won"]
+    },
+    "closed_won_forecast": {
+      "mode": "in",
+      "values": ["Closed Won", "Signing", "In Finalization / Purchasing"]
+    },
+    "forecast": {
+      "mode": "in",
+      "values": ["Signing", "In Finalization / Purchasing"]
+    },
+    "bridge": {
+      "mode": "in",
+      "values": ["In Negotiation", "Proposal / Price Quote"]
+    },
+    "upside": {
+      "mode": "in",
+      "values": ["Presales / Solution Architecture", "Suspect Qualified"]
+    },
+    "pipeline": {
+      "mode": "not_in",
+      "values": ["Closed Won", "Closed Lost"]
+    }
+  }
+}

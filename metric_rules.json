@@ -1,0 +1,37 @@
+[
+  {
+    "id": "pipeline",
+    "title": "Pipeline",
+    "text": "Pipeline = deals where stage NOT IN ('Closed Won','Closed Lost') (do NOT filter stage = 'Pipeline')."
+  },
+  {
+    "id": "closed_won",
+    "title": "Closed Won",
+    "text": "Closed Won revenue = SUM(revenue) where stage = 'Closed Won'."
+  },
+  {
+    "id": "closed_lost",
+    "title": "Closed Lost",
+    "text": "Closed Lost revenue = SUM(revenue) where stage = 'Closed Lost'."
+  },
+  {
+    "id": "deal_count",
+    "title": "Deal Count",
+    "text": "Deal count = COUNT(*) across deals (respect filters)."
+  },
+  {
+    "id": "win_rate",
+    "title": "Win Rate",
+    "text": "Win rate = Closed Won count / (Closed Won + Closed Lost)."
+  },
+  {
+    "id": "forecast",
+    "title": "Forecast",
+    "text": "Forecast = SUM(revenue) where stage = 'Forecast'."
+  },
+  {
+    "id": "finalisation",
+    "title": "In Finalisation",
+    "text": "In Finalisation = SUM(revenue) where stage = 'In Finalisation'."
+  }
+]
