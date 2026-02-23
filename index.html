@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SQL from LLM</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Literata:opsz,wght@7..72,500;7..72,700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="header">
+        <div class="badge">SQL from LLM</div>
+        <h1>Ask a question, get SQL + results</h1>
+        <p>
+          The model generates SQL based on your Microsoft Fabric Data Warehouse
+          schema, then we run it directly.
+        </p>
+        <p>
+          <a href="full_ui.html">Open Full UI</a>
+        </p>
+        <p>
+          <a href="intent.html">Intent Planner UI</a>
+        </p>
+        <p>
+          <a href="sql_from_intent.html">SQL From Intent UI</a>
+        </p>
+        <p>
+          <a href="prompt_to_sql.html">Prompt -> Intent -> SQL UI</a>
+        </p>
+        <p>
+          <a href="examples.html">SQL Examples Manager</a>
+        </p>
+      </header>
+
+      <section class="chat">
+        <div class="panel-card">
+          <label for="question">Question</label>
+          <textarea
+            id="question"
+            placeholder="Ask in plain English"
+            rows="3"
+          ></textarea>
+          <div class="actions">
+            <button id="run" class="primary" type="button">Run</button>
+            <span id="status" class="status">Idle</span>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <h2>Answer</h2>
+          <div id="narrative" class="results">Ready.</div>
+        </div>
+
+        <div class="panel-card">
+          <h2>Prompt Sent</h2>
+          <pre id="prompt" class="code-block">Ready.</pre>
+        </div>
+
+        <div class="panel-card">
+          <h2>Generated SQL</h2>
+          <pre id="sql" class="code-block">Ready.</pre>
+        </div>
+
+        <div class="panel-card">
+          <h2>Raw LLM Output</h2>
+          <pre id="llm-raw" class="code-block">Ready.</pre>
+        </div>
+
+        <div class="panel-card">
+          <h2>Results</h2>
+          <div id="results" class="results"></div>
+        </div>
+
+        <div class="panel-card">
+          <h2>Final Answer (LLM)</h2>
+          <div id="final-answer" class="results">Ready.</div>
+        </div>
+      </section>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

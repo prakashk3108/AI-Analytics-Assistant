@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Prompt -> Intent -> SQL</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Literata:opsz,wght@7..72,500;7..72,700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="header">
+        <div class="badge">Pipeline</div>
+        <h1>Prompt -> Intent -> SQL -> Results</h1>
+        <p>One button: question goes to intent planner, then SQL generator.</p>
+        <p><a href="/">Back</a></p>
+      </header>
+
+      <section class="panel">
+        <label for="question">Question</label>
+        <textarea id="question" rows="3" placeholder="e.g. revenue last month"></textarea>
+        <div class="actions">
+          <button id="run" type="button">Run</button>
+          <label style="display:inline-flex;align-items:center;gap:6px;margin-left:8px;font-size:12px">
+            <input id="preview-only" type="checkbox" checked />
+            Preview SQL only
+          </label>
+          <span id="status">Idle</span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <label>Intent JSON</label>
+        <pre id="intent" class="code">Ready.</pre>
+      </section>
+
+      <section class="panel">
+        <label>Generated SQL</label>
+        <pre id="sql" class="code">Ready.</pre>
+      </section>
+
+      <section class="panel">
+        <label>Validated SQL</label>
+        <pre id="validated-sql" class="code">Ready.</pre>
+      </section>
+
+      <section class="panel">
+        <label>Similar Examples Used</label>
+        <pre id="examples-used" class="code">Ready.</pre>
+      </section>
+
+      <section class="panel">
+        <label>Final Answer (LLM)</label>
+        <pre id="narrative" class="code">Ready.</pre>
+      </section>
+
+      <section class="panel">
+        <label>Results</label>
+        <div id="results"></div>
+      </section>
+    </div>
+
+    <script>
+      const run = document.getElementById("run");
+      const q = document.getElementById("question");
+      const status = document.getElementById("status");
+      const previewOnly = document.getElementById("preview-only");
+      const intentEl = document.getElementById("intent");
+      const sqlEl = document.getElementById("sql");
+      const validatedSqlEl = document.getElementById("validated-sql");
+      const examplesUsedEl = document.getElementById("examples-used");
+      const narrativeEl = document.getElementById("narrative");
+      const resultsEl = document.getElementById("results");
+
+      function renderTable(columns, rows) {
+        function formatCellForDisplay(colName, cell) {
+          if (cell === null || cell === undefined) return "";
+          const c = String(colName || "").toLowerCase();
+          const isThousands = c.includes("thousand") || c.endsWith("_k");
+          if (!isThousands) return String(cell);
+          const n = Number(cell);
+          if (!Number.isFinite(n)) return String(cell);
+          return `${Math.round(n)}K`;
+        }
+
+        resultsEl.innerHTML = "";
+        if (!columns || !columns.length) {
+          resultsEl.textContent = "No results.";
+          return;
+        }
+        const table = document.createElement("table");
+        const thead = document.createElement("thead");
+        const trh = document.createElement("tr");
+        columns.forEach((c) => {
+          const th = document.createElement("th");
+          th.textContent = c;
+          trh.appendChild(th);
+        });
+        thead.appendChild(trh);
+        table.appendChild(thead);
+        const tbody = document.createElement("tbody");
+        (rows || []).forEach((r) => {
+          const tr = document.createElement("tr");
+          r.forEach((cell, idx) => {
+            const td = document.createElement("td");
+            td.textContent = formatCellForDisplay(columns[idx], cell);
+            tr.appendChild(td);
+          });
+          tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        resultsEl.appendChild(table);
+      }
+
+      async function postJson(url, payload) {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const text = await res.text();
+        let data = null;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = { error: "Server did not return JSON", detail: text };
+        }
+        return { ok: res.ok, status: res.status, data };
+      }
+
+      async function runPipeline() {
+        const question = q.value.trim();
+        if (!question) return;
+
+        status.textContent = "Planning intent...";
+        intentEl.textContent = "Working...";
+        sqlEl.textContent = "Working...";
+        validatedSqlEl.textContent = "Working...";
+        examplesUsedEl.textContent = "Working...";
+        narrativeEl.textContent = "Working...";
+        resultsEl.textContent = "Working...";
+
+        const intentRes = await postJson("/api/intent", { query: question });
+        if (!intentRes.ok) {
+          status.textContent = "Failed";
+          intentEl.textContent = intentRes.data.detail || intentRes.data.error || "Error";
+          sqlEl.textContent = "Error";
+          validatedSqlEl.textContent = "Error";
+          examplesUsedEl.textContent = "Error";
+          narrativeEl.textContent = "Error";
+          resultsEl.textContent = "Error";
+          return;
+        }
+
+        const intent = intentRes.data.intent;
+        intentEl.textContent = JSON.stringify(intent, null, 2);
+
+        status.textContent = "Generating SQL...";
+        const sqlRes = await postJson("/api/sql_from_intent", {
+          intent,
+          question,
+          preview_sql_only: Boolean(previewOnly && previewOnly.checked),
+        });
+        if (!sqlRes.ok) {
+          status.textContent = "Failed";
+          sqlEl.textContent = sqlRes.data.sql || "Error";
+          validatedSqlEl.textContent = sqlRes.data.validated_sql || sqlRes.data.sql || "Error";
+          examplesUsedEl.textContent = JSON.stringify(sqlRes.data.similar_examples || [], null, 2);
+          narrativeEl.textContent = sqlRes.data.error || "Error";
+          resultsEl.textContent = sqlRes.data.detail || sqlRes.data.error || "Error";
+          return;
+        }
+
+        sqlEl.textContent = sqlRes.data.generator_sql || sqlRes.data.sql || "";
+        validatedSqlEl.textContent = sqlRes.data.validated_sql || sqlRes.data.sql || "";
+        examplesUsedEl.textContent = JSON.stringify(sqlRes.data.similar_examples || [], null, 2);
+        if (sqlRes.data.preview_sql_only) {
+          narrativeEl.textContent = "SQL previewed. Uncheck 'Preview SQL only' and click Run to execute.";
+          resultsEl.textContent = "Not executed.";
+          status.textContent = "Previewed";
+          return;
+        }
+        narrativeEl.textContent = sqlRes.data.narrative || "";
+        renderTable(sqlRes.data.columns || [], sqlRes.data.rows || []);
+        status.textContent = "Done";
+      }
+
+      run.addEventListener("click", runPipeline);
+      q.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+          event.preventDefault();
+          runPipeline();
+        }
+      });
+    </script>
+  </body>
+</html>

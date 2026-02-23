@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SQL From Intent</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Literata:opsz,wght@7..72,500;7..72,700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="header">
+        <div class="badge">SQL From Intent</div>
+        <h1>Intent JSON -> SQL -> Results</h1>
+        <p>
+          Uses only schema/rules/constraints + intent JSON to generate SQL.
+        </p>
+        <p><a href="/">Back</a></p>
+      </header>
+
+      <section class="panel">
+        <label for="intent">Intent JSON</label>
+        <textarea
+          id="intent"
+          rows="10"
+          placeholder='{\"metric\":\"revenue\",\"time_period\":\"last_month\",\"filters\":{},\"group_by\":[],\"sort\":null,\"threshold\":null}'
+        ></textarea>
+        <div class="actions">
+          <button id="run" type="button">Run</button>
+          <span id="status">Idle</span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <label>Prompt Sent</label>
+        <pre id="prompt" class="code">Ready.</pre>
+      </section>
+
+      <section class="panel">
+        <label>Raw LLM Output</label>
+        <pre id="raw" class="code">Ready.</pre>
+      </section>
+
+      <section class="panel">
+        <label>Generated SQL</label>
+        <pre id="sql" class="code">Ready.</pre>
+      </section>
+
+      <section class="panel">
+        <label>Final Answer (LLM)</label>
+        <pre id="narrative" class="code">Ready.</pre>
+      </section>
+
+      <section class="panel">
+        <label>Results</label>
+        <div id="results"></div>
+      </section>
+    </div>
+
+    <script>
+      const run = document.getElementById("run");
+      const intentEl = document.getElementById("intent");
+      const status = document.getElementById("status");
+      const prompt = document.getElementById("prompt");
+      const raw = document.getElementById("raw");
+      const sql = document.getElementById("sql");
+      const narrative = document.getElementById("narrative");
+      const results = document.getElementById("results");
+
+      function renderTable(columns, rows) {
+        function formatCellForDisplay(colName, cell) {
+          if (cell === null || cell === undefined) return "";
+          const c = String(colName || "").toLowerCase();
+          const isThousands = c.includes("thousand") || c.endsWith("_k");
+          if (!isThousands) return String(cell);
+          const n = Number(cell);
+          if (!Number.isFinite(n)) return String(cell);
+          return `${Math.round(n)}K`;
+        }
+
+        results.innerHTML = "";
+        if (!columns || !columns.length) {
+          results.textContent = "No results.";
+          return;
+        }
+        const table = document.createElement("table");
+        const thead = document.createElement("thead");
+        const trh = document.createElement("tr");
+        columns.forEach((c) => {
+          const th = document.createElement("th");
+          th.textContent = c;
+          trh.appendChild(th);
+        });
+        thead.appendChild(trh);
+        table.appendChild(thead);
+        const tbody = document.createElement("tbody");
+        (rows || []).forEach((r) => {
+          const tr = document.createElement("tr");
+          r.forEach((cell, idx) => {
+            const td = document.createElement("td");
+            td.textContent = formatCellForDisplay(columns[idx], cell);
+            tr.appendChild(td);
+          });
+          tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        results.appendChild(table);
+      }
+
+      async function runSqlFromIntent() {
+        const text = intentEl.value.trim();
+        if (!text) return;
+        let intent;
+        try {
+          intent = JSON.parse(text);
+        } catch (e) {
+          status.textContent = "Failed";
+          prompt.textContent = "Invalid JSON";
+          return;
+        }
+
+        status.textContent = "Running...";
+        prompt.textContent = "Working...";
+        raw.textContent = "Working...";
+        sql.textContent = "Working...";
+        narrative.textContent = "Working...";
+        results.textContent = "Working...";
+
+        try {
+          const res = await fetch("/api/sql_from_intent", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ intent }),
+          });
+          const text = await res.text();
+          let data = null;
+          try {
+            data = JSON.parse(text);
+          } catch (e) {
+            data = { error: "Server did not return JSON", detail: text };
+          }
+          if (!res.ok) {
+            status.textContent = "Failed";
+            prompt.textContent = data.detail || data.error || "Error";
+            raw.textContent = data.llm_raw || "";
+            sql.textContent = data.sql || "Error";
+            narrative.textContent = data.error || "Error";
+            results.textContent = data.error || "Error";
+            return;
+          }
+          status.textContent = "Done";
+          prompt.textContent = data.prompt || "";
+          raw.textContent = data.llm_raw || "";
+          sql.textContent = data.sql || "";
+          narrative.textContent = data.narrative || "";
+          renderTable(data.columns || [], data.rows || []);
+        } catch (e) {
+          status.textContent = "Failed";
+          prompt.textContent = String(e);
+          results.textContent = "Failed to fetch";
+        }
+      }
+
+      run.addEventListener("click", runSqlFromIntent);
+      intentEl.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+          event.preventDefault();
+          runSqlFromIntent();
+        }
+      });
+    </script>
+  </body>
+</html>

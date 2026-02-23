@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SQL Examples Manager</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Arial, sans-serif;
+        background: #f8f5e5;
+        color: #0a1a3a;
+      }
+      .wrap {
+        max-width: 1100px;
+        margin: 24px auto;
+        padding: 0 16px 32px;
+      }
+      .card {
+        background: #fff;
+        border: 1px solid #d9d9d9;
+        border-radius: 14px;
+        padding: 16px;
+        margin-bottom: 16px;
+      }
+      h1 {
+        margin: 0 0 8px;
+      }
+      h2 {
+        margin: 0 0 12px;
+        font-size: 20px;
+      }
+      label {
+        display: block;
+        font-size: 12px;
+        margin: 8px 0 4px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      input, textarea {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #bcc4d4;
+        border-radius: 10px;
+        padding: 10px 12px;
+        font: inherit;
+      }
+      textarea {
+        min-height: 120px;
+        resize: vertical;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .btn {
+        border: 0;
+        border-radius: 999px;
+        background: #ff9d00;
+        color: #111;
+        font-weight: 600;
+        padding: 10px 16px;
+        cursor: pointer;
+      }
+      .btn.alt {
+        background: #1a274b;
+        color: #fff;
+      }
+      .btn.danger {
+        background: #b42318;
+        color: #fff;
+      }
+      .btn.small {
+        padding: 6px 10px;
+        font-size: 12px;
+      }
+      .status {
+        margin-left: 10px;
+        font-size: 13px;
+        color: #4b5563;
+      }
+      pre {
+        margin: 0;
+        background: #0c1733;
+        color: #d9e4ff;
+        border-radius: 10px;
+        padding: 12px;
+        overflow-x: auto;
+        white-space: pre-wrap;
+      }
+      .example-item {
+        border: 1px solid #d9d9d9;
+        border-radius: 12px;
+        padding: 10px;
+        margin-bottom: 10px;
+      }
+      .meta {
+        font-size: 12px;
+        color: #6b7280;
+        margin-bottom: 6px;
+      }
+      @media (max-width: 860px) {
+        .row {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>SQL Examples Manager</h1>
+      <p>Store validated question + SQL pairs and test similar retrieval.</p>
+
+      <div class="card">
+        <h2>Add Example</h2>
+        <label for="question">Question</label>
+        <input id="question" placeholder="Are we on track to hit this month revenue target?" />
+        <label for="sql">SQL</label>
+        <textarea id="sql" placeholder="WITH ... SELECT ..."></textarea>
+        <div class="row">
+          <div>
+            <label for="tags">Tags (comma separated)</label>
+            <input id="tags" placeholder="target, performance, mtd" />
+          </div>
+          <div>
+            <label for="notes">Notes</label>
+            <input id="notes" placeholder="validated in UAT" />
+          </div>
+        </div>
+        <div style="margin-top:12px">
+          <button id="add-btn" class="btn">Save Example</button>
+          <span id="add-status" class="status">Idle</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Search Similar</h2>
+        <div class="row">
+          <div>
+            <label for="search-q">Question</label>
+            <input id="search-q" placeholder="revenue last month by type" />
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:8px">
+            <button id="search-btn" class="btn alt">Find Similar</button>
+            <span id="search-status" class="status">Idle</span>
+          </div>
+        </div>
+        <div id="similar-results" style="margin-top:12px"></div>
+      </div>
+
+      <div class="card">
+        <h2>All Examples</h2>
+        <button id="refresh-btn" class="btn alt">Refresh</button>
+        <span id="list-status" class="status">Idle</span>
+        <div id="examples-list" style="margin-top:12px"></div>
+      </div>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+
+      function renderExample(container, ex) {
+        const div = document.createElement("div");
+        div.className = "example-item";
+        div.innerHTML = `
+          <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
+            <div class="meta">#${ex.id ?? "-"} | score: ${ex.score ?? "-"} | tags: ${(ex.tags || []).join(", ") || "-"}</div>
+            ${ex.id ? `<button class="btn danger small delete-example" data-id="${ex.id}" type="button">Delete</button>` : ""}
+          </div>
+          <div><strong>Q:</strong> ${ex.question || ""}</div>
+          <div style="margin-top:8px"><strong>SQL:</strong></div>
+          <pre>${ex.sql_text || ""}</pre>
+          <div class="meta" style="margin-top:8px">notes: ${ex.notes || "-"}</div>
+        `;
+        container.appendChild(div);
+      }
+
+      async function loadExamples() {
+        $("list-status").textContent = "Loading...";
+        const res = await fetch("/api/examples");
+        const data = await res.json();
+        const root = $("examples-list");
+        root.innerHTML = "";
+        if (!res.ok) {
+          $("list-status").textContent = data.error || "Failed";
+          return;
+        }
+        (data.examples || []).forEach((ex) => renderExample(root, ex));
+        $("list-status").textContent = `Loaded ${(data.examples || []).length}`;
+      }
+
+      $("add-btn").addEventListener("click", async () => {
+        const question = $("question").value.trim();
+        const sql = $("sql").value.trim();
+        const tags = $("tags")
+          .value.split(",")
+          .map((x) => x.trim())
+          .filter(Boolean);
+        const notes = $("notes").value.trim();
+        if (!question || !sql) {
+          $("add-status").textContent = "Question and SQL are required";
+          return;
+        }
+        $("add-status").textContent = "Saving...";
+        const res = await fetch("/api/examples", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question, sql, tags, notes }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          $("add-status").textContent = data.error || "Failed";
+          return;
+        }
+        $("add-status").textContent = `Saved id ${data.id}`;
+        await loadExamples();
+      });
+
+      $("search-btn").addEventListener("click", async () => {
+        const q = $("search-q").value.trim();
+        if (!q) {
+          $("search-status").textContent = "Enter a question";
+          return;
+        }
+        $("search-status").textContent = "Searching...";
+        const res = await fetch(`/api/examples/similar?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        const root = $("similar-results");
+        root.innerHTML = "";
+        if (!res.ok) {
+          $("search-status").textContent = data.error || "Failed";
+          return;
+        }
+        (data.examples || []).forEach((ex) => renderExample(root, ex));
+        $("search-status").textContent = `${(data.examples || []).length} match(es)`;
+      });
+
+      $("refresh-btn").addEventListener("click", loadExamples);
+
+      $("examples-list").addEventListener("click", async (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+        if (!target.classList.contains("delete-example")) return;
+        const id = Number(target.getAttribute("data-id") || "0");
+        if (!id) return;
+        if (!window.confirm(`Delete example #${id}?`)) return;
+        $("list-status").textContent = `Deleting #${id}...`;
+        const res = await fetch(`/api/examples/${id}`, { method: "DELETE" });
+        const data = await res.json();
+        if (!res.ok) {
+          $("list-status").textContent = data.error || "Delete failed";
+          return;
+        }
+        $("list-status").textContent = `Deleted #${id}`;
+        await loadExamples();
+      });
+
+      loadExamples();
+    </script>
+  </body>
+</html>

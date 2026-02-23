@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SQL from LLM | CRO Copilot Prod</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Literata:opsz,wght@7..72,500;7..72,700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="full_ui.css?v=20260221a" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="topbar-left">
+          <div class="badge">SQL FROM LLM</div>
+          <div class="topbar-title">
+            <h1>CRO Copilot</h1>
+            <p>Ask questions in plain English. We generate SQL and run it against Fabric DW.</p>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <a class="link" href="/">Simple UI</a>
+          <button id="stop" class="btn danger" type="button" disabled>Stop</button>
+        </div>
+      </header>
+
+      <main class="layout">
+        <aside class="left">
+          <section class="card">
+            <div class="card-head">
+              <h2>Conversations</h2>
+              <div class="row">
+                <button id="new-chat" class="pill" type="button">New</button>
+                <button id="clear-chats" class="pill ghost" type="button">Clear</button>
+              </div>
+            </div>
+            <div id="chat-list" class="chat-list"></div>
+          </section>
+
+          <section class="card">
+            <div class="card-head">
+              <h2>Latest Insight</h2>
+              <button id="copy-latest" class="pill ghost" type="button">Copy</button>
+            </div>
+            <div id="latest" class="latest">Ask a question to see the latest answer here.</div>
+          </section>
+
+          <section class="card">
+            <div class="card-head">
+              <h2>Try Asking</h2>
+              <button id="run-demo" class="pill" type="button">Run Demo</button>
+            </div>
+            <ul class="try-list">
+              <li>Are we on track to hit this month margin target?</li>
+              <li>Which are our top 5 pipeline deals this month, and what percentage of total pipeline margin does each contribute?</li>
+              <li>How much pipeline is in Commit vs Best Case vs Early Stage?</li>
+              <li>How much margin we create last month vs budget</li>
+              <li>Show top 5 deals in Pipeline by margin with deal name</li>
+              <li>What is our pipeline coverage revenue for next quarter with revenue type name</li>
+              <li>list top 10 sales person with their first name and last name this year</li>
+              <li>show 10 deals revenue in pipeline this year with deal name</li>
+              <li>compare q3 and q4 revenue for last year for each revenue type</li>
+              <li>what to expect as a revenue and margin for next month</li>
+            </ul>
+          </section>
+
+          <section class="card">
+            <div class="card-head">
+              <h2>Question Library</h2>
+            </div>
+            <div class="library">
+              <div class="library-group">
+                <h3>Revenue & Margin</h3>
+                <ul>
+                  <li>Total revenue this month</li>
+                  <li>Margin by revenue type this quarter</li>
+                  <li>Top 10 deals by revenue this year</li>
+                </ul>
+              </div>
+              <div class="library-group">
+                <h3>Budget vs Actual</h3>
+                <ul>
+                  <li>Budget vs actual revenue this month</li>
+                  <li>Which revenue types are underperforming vs budget this quarter</li>
+                  <li>Budget vs actual margin by revenue type last month</li>
+                </ul>
+              </div>
+              <div class="library-group">
+                <h3>Pipeline & Coverage</h3>
+                <ul>
+                  <li>Pipeline value by stage</li>
+                  <li>Pipeline coverage ratio this quarter</li>
+                  <li>Top 10% of pipeline deals contribute how much revenue</li>
+                </ul>
+              </div>
+              <div class="library-group">
+                <h3>Time Comparisons</h3>
+                <ul>
+                  <li>Compare Q1 this year vs Q1 last year revenue by revenue type</li>
+                  <li>Revenue trend by month this year</li>
+                  <li>Margin vs revenue last month</li>
+                </ul>
+              </div>
+              <div class="library-group">
+                <h3>Sales Team</h3>
+                <ul>
+                  <li>Top 10 sales people by revenue this year</li>
+                  <li>Revenue by sales person last quarter</li>
+                  <li>Which team drives the most revenue</li>
+                </ul>
+              </div>
+              <div class="library-group">
+                <h3>Customer & Deals</h3>
+                <ul>
+                  <li>Top 10 customers by revenue this year</li>
+                  <li>List deals in Closed Won this month</li>
+                  <li>Deals in Forecast stage with revenue</li>
+                </ul>
+              </div>
+              <div class="library-group">
+                <h3>Forecast / Next Period</h3>
+                <ul>
+                  <li>Expected revenue next month by revenue type</li>
+                  <li>Expected margin next month</li>
+                  <li>Forecast vs actual this month</li>
+                </ul>
+              </div>
+              <div class="library-group">
+                <h3>Charts</h3>
+                <ul>
+                  <li>Revenue by revenue type bar chart</li>
+                  <li>Revenue trend by month line chart</li>
+                  <li>Margin vs revenue by revenue type bar chart</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+        </aside>
+
+        <section class="right">
+          <section class="chat-pane">
+            <div id="chat" class="chat"></div>
+          </section>
+
+          <section class="chips" aria-label="Recent questions">
+            <div class="chips-label">Recent questions</div>
+            <div id="chips" class="chips-row"></div>
+          </section>
+
+          <section class="composer">
+            <div class="context-row">
+              <div class="context-item">
+                <label for="filter-region">Region (ask every question)</label>
+                <select id="filter-region">
+                  <option value="GBR" selected>UK (GBR)</option>
+                  <option value="CAN">CAN</option>
+                </select>
+              </div>
+              <div class="context-item">
+                <label for="filter-currency">Currency</label>
+                <select id="filter-currency">
+                  <option value="GBP" selected>GBP</option>
+                  <option value="CAD">CAD</option>
+                </select>
+              </div>
+            </div>
+            <div id="query-context-badges" class="context-badges"></div>
+            <textarea id="question" rows="2" placeholder="Ask about deals... (Ctrl+Enter to send)"></textarea>
+            <div class="composer-row">
+              <button id="run" class="btn primary" type="button">Send</button>
+              <div id="status" class="status">Idle</div>
+              <button id="approve-example" class="btn secondary" type="button" disabled>Approve</button>
+              <div id="approve-status" class="status">Not saved</div>
+              <div class="spacer"></div>
+              <button id="toggle-details" class="btn secondary" type="button">Details</button>
+            </div>
+          </section>
+
+          <section id="details" class="details" hidden>
+            <div class="details-grid">
+              <section class="card">
+                <div class="card-head">
+                  <h2>Final Answer (LLM)</h2>
+                  <div class="meta" id="timing"></div>
+                </div>
+                <div id="final" class="final">Ready.</div>
+              </section>
+
+              <section class="card">
+                <div class="card-head">
+                  <h2>Results</h2>
+                  <div class="meta" id="results-meta"></div>
+                </div>
+                <div id="results" class="results">Ready.</div>
+                <div class="row">
+                  <button id="download-csv" class="btn secondary" type="button" disabled>Download CSV</button>
+                </div>
+              </section>
+
+              <section class="card">
+                <div class="card-head">
+                  <h2>Generated SQL</h2>
+                  <div class="row">
+                    <button id="copy-sql" class="btn secondary" type="button" disabled>Copy</button>
+                  </div>
+                </div>
+                <pre id="sql" class="code">Ready.</pre>
+              </section>
+
+              <section class="card">
+                <div class="card-head">
+                  <h2>Prompt Sent</h2>
+                  <div class="row">
+                    <button id="copy-prompt" class="btn secondary" type="button" disabled>Copy</button>
+                  </div>
+                </div>
+                <pre id="prompt" class="code">Ready.</pre>
+              </section>
+
+              <section class="card">
+                <div class="card-head">
+                  <h2>Raw LLM Output</h2>
+                  <div class="row">
+                    <button id="copy-raw" class="btn secondary" type="button" disabled>Copy</button>
+                  </div>
+                </div>
+                <pre id="raw" class="code">Ready.</pre>
+              </section>
+
+              <section class="card">
+                <div class="card-head">
+                  <h2>SQL Validator</h2>
+                  <div class="meta" id="validator-meta"></div>
+                </div>
+                <div id="validator" class="validator">Waiting.</div>
+              </section>
+
+              <section class="card span2">
+                <div class="card-head">
+                  <h2>Debug Bundle</h2>
+                  <div class="row">
+                    <button id="copy-debug" class="btn secondary" type="button" disabled>Copy Debug</button>
+                  </div>
+                </div>
+                <pre id="debug" class="code">Ready.</pre>
+              </section>
+
+              <section class="card span2">
+                <div class="card-head">
+                  <h2>Schema Scope</h2>
+                  <div class="row">
+                    <button id="refresh-tables" class="btn secondary" type="button">Refresh</button>
+                    <button id="copy-scope" class="btn secondary" type="button">Copy</button>
+                  </div>
+                </div>
+                <input id="table-search" class="search" type="search" placeholder="Filter tables" />
+                <div id="table-picker" class="table-picker"></div>
+                <div class="note">UI-only scope for now.</div>
+              </section>
+
+              <section class="card span2">
+                <div class="card-head">
+                  <h2>Metric Rules (UI only)</h2>
+                  <div class="row">
+                    <button id="load-metric-rules" class="btn secondary" type="button">Load</button>
+                    <button id="save-metric-rules" class="btn secondary" type="button">Save</button>
+                  </div>
+                </div>
+                <textarea id="metric-rules" class="metric" rows="8" placeholder="metric_rules.json contents"></textarea>
+                <div class="note">Not wired into the server prompt yet.</div>
+              </section>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      // If this doesn't change to "Ready" after load, the JS didn't run.
+      (function () {
+        var el = document.getElementById("status");
+        if (el) el.textContent = "Loading UI...";
+
+        // If the script fails before init (syntax error, etc.), surface it here.
+        window.addEventListener("error", function (e) {
+          var el2 = document.getElementById("status");
+          if (!el2) return;
+          var msg = (e && e.message) ? e.message : "Script error";
+          el2.textContent = "UI error: " + msg;
+        });
+        window.addEventListener("unhandledrejection", function (e) {
+          var el2 = document.getElementById("status");
+          if (!el2) return;
+          var msg = (e && e.reason && e.reason.message) ? e.reason.message : String((e && e.reason) || "Promise rejection");
+          el2.textContent = "UI error: " + msg;
+        });
+
+        setTimeout(function () {
+          var el3 = document.getElementById("status");
+          if (!el3) return;
+          if (!window.__full_ui_loaded) {
+            if (window.__full_ui_script_fetched) {
+              el3.textContent = "UI error: /full_ui.js fetched but did not execute (check console)";
+            } else {
+              el3.textContent = "UI error: /full_ui.js did not load";
+            }
+            return;
+          }
+          if (!window.__full_ui_booted && el3.textContent === "Loading UI...") {
+            el3.textContent = "UI error: full_ui.js loaded but did not initialize (check console)";
+          }
+        }, 3000);
+      })();
+    </script>
+    <script
+      src="/full_ui.js?v=20260221a"
+      onload="(function(){window.__full_ui_script_fetched=true; var el=document.getElementById('status'); if(el && el.textContent==='Loading UI...') el.textContent='Loading UI (script fetched)...';})()"
+      onerror="(function(){var el=document.getElementById('status'); if(el) el.textContent='UI error: failed to load /full_ui.js';})()"
+    ></script>
+  </body>
+</html>
