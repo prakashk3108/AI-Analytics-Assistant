@@ -1,5 +1,6 @@
 # SQLfromLLM Report (What We Built + Flow)
-<img width="1536" height="1024" alt="ChatGPT Image Feb 23, 2026, 07_51_01 AM" src="https://github.com/user-attachments/assets/bf5a625b-44a9-421c-9f9f-18f783f6717a" />
+<img width="1536" height="1024" alt="ChatGPT Image Feb 23, 2026, 07_54_44 AM" src="https://github.com/user-attachments/assets/c65b615f-a363-49aa-9b56-4f8b2cd0b1cb" />
+
 
 This document summarizes the current build, key features, and execution flow.
 
